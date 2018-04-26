@@ -15,19 +15,21 @@ from phue import Bridge
 # Create a new HEM Client
 hemSuperClient = HemSuperClient("localhost", 9931)
 
+# Get things from the config file
+# This ideally would be a more robust configuration method
 OPT_LIGHT = Brains_config.OPT_LIGHT
 MAX_CHANGE = Brains_config.MAX_CHANGE
 OPT_TEMP = Brains_config.OPT_TEMP
-FAN_NODE = Brains_config.FAN_NODE
 LIGHT_NODE = Brains_config.LIGHT_NODE
 UDP_IP = Brains_config.UDP_IP
 UPD_PORT = Brains_config.UPD_PORT
-b = Bridge(Brains_config.BRIDGE_IP)
+b = Bridge(Brains_config.BRIDGE_IP) # Create a phue bridge object from the IP
 CRIT_NODE = Brains_config.CRIT_NODE
 NUM_CLUSTERS= Brains_config.NUM_CLUSTERS
 POWER_THRESHOLD_inRoom = Brains_config.POWER_THRESHOLD_inRoom
 POWER_THRESHOLD_outRoom = Brains_config.POWER_THRESHOLD_outRoom
 
+# Setup globals (we'd have done this differently)
 readLight = 0
 currLight = 255
 nextLight = 0
@@ -38,19 +40,24 @@ clusters = {}
 newRequest = False
 lastResponse = None
 
+# Connect to the EnerGyan
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
 sock.bind((UDP_IP, UPD_PORT))
 
+
 def update(message, address):
+    """ Get the UDP response and stick in in a global var and notify """
     global newRequest
     global lastResponse
     newRequest = True
     lastResponse = message
-    print('Rec:', message, address)
+    print('Rec:', message, address) # Printing for debug purposes
 
 
 def lights():
+    """
+    Modifies light values based on the last data recieved from sensors.
+    """
     global inRoom
     global readLight
     global b
@@ -65,6 +72,8 @@ def lights():
     avLight = 0
 
     print("inRoom = " + str(inRoom))
+
+    # If someone is in the room and the light isn't a cirical node, mess with it
     if ((LIGHT_NODE not in CRIT_NODE) and inRoom):
         print ((LIGHT_NODE not in CRIT_NODE) and inRoom)
         b.set_light([1,2], 'on', True)
@@ -90,7 +99,7 @@ def lights():
             print("nextLight = " + str(nextLight))
 
         b.set_light([1,2], 'bri', nextLight)
-    else:
+    else: # Turn of the light otherwise
         b.set_light([1,2], 'on', False)
 
 
@@ -139,7 +148,7 @@ def main():
     b.get_api()
 
     hemSuperClient.subscribe(update)
-    
+
     while True:
 
         inRoom = False
